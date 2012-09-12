@@ -1,8 +1,11 @@
+import logging
+import time
 import redis
 from django.utils.encoding import force_unicode
 from django.contrib.sessions.backends.base import SessionBase, CreateError
 from django.conf import settings
 
+LOG = logging.getLogger(__name__)
 
 class SessionStore(SessionBase):
     """
@@ -19,7 +22,17 @@ class SessionStore(SessionBase):
 
     def load(self):
         try:
-            session_data = self.server.get(self.get_real_stored_key(self._get_or_create_session_key()))
+            session_key = self.get_real_stored_key(self._get_or_create_session_key())
+            start_time = time.time()
+            session_data = self.server.get(session_key)
+            fetch_duration = time.time() - start_time
+            if fetch_duration > 1.0:
+                LOG.warning("Slow session load", exc_info=True, extra={
+                    'culprit': 'redis_sessions.session.SessionStore.load',
+                    'data': {
+                        'session_key': session_key,
+                    },
+                })
             return self.decode(force_unicode(session_data))
         except:
             self.create()
