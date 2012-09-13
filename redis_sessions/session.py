@@ -31,6 +31,7 @@ class SessionStore(SessionBase):
                     'culprit': 'redis_sessions.session.SessionStore.load',
                     'data': {
                         'session_key': session_key,
+                        'duration': fetch_duration,
                     },
                 })
             return self.decode(force_unicode(session_data))
@@ -44,7 +45,7 @@ class SessionStore(SessionBase):
     def create(self):
         while True:
             self._session_key = self._get_new_session_key()
-            
+
             try:
                 self.save(must_create=True)
             except CreateError:
